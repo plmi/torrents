@@ -43,9 +43,10 @@ done
 # create torrent files
 log "Create torrent files"
 ANNOUNCE_URL="$4"
-find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | xargs -I {} \
-  maketorrent --announce "${ANNOUNCE_URL}" --piece-length 24 \
-  --private --name "${DESTINATION_PATH}/$(basename {})" {}
+find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | while read -r dirname; do
+  TORRENT_NAME="${DESTINATION_PATH}/$(basename "$dirname")"
+  maketorrent --announce "${ANNOUNCE_URL}" --piece-length 24 --private --name "$TORRENT_NAME" "$dirname"
+done
 
 # move folders to destination
 log "Move files to destination"
