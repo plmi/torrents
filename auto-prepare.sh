@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# usage ./<program> <source directory> <mount point> <destination directory>
+# usage ./<program> <source directory> <mount point> <destination directory> <announce url>
 
 function log() {
   echo -e "\e[1m[\e[32m+\e[0m\e[1m]\e[0m ${1}"
@@ -15,6 +15,10 @@ find "$SOURCE_DIRECTORY" -type d \( -iname 'Proof' -o -iname 'Sample' \) -exec r
 # search for folders that match a dirname and trim {{.*}}
 log "Sanitize directory names"
 find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '^\.\/.*-.+{{.*?}}$' -execdir sh -c 'mv "$1" "$(echo "$1" | sed "s/{{.*}}$//")"' sh {} \;
+# if a folder just contains another folder move its files into parent directory
+find "$SOURCE_DIRECTORY" -mindepth 2 -maxdepth 2 -type d -exec sh -c 'cp -t "${1}/../" "$1"/*' _ {} \;
+# delete empty directories
+find "$SOURCE_DIRECTORY" -mindepth 2 -maxdepth 2 -type d -empty -delete
 
 # create mediainfo for each directory
 log "Run mediainfo"
@@ -36,8 +40,9 @@ done
 
 # create torrent files
 log "Create torrent files"
+ANNOUNCE_URL="$4"
 find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '^\.\/.*-.+$' | xargs -I {} \
-  maketorrent --announce "https://torrent-syndikat.org/ts_ann.php" --piece-length 24 \
+  maketorrent --announce "${ANNOUNCE_URL}" --piece-length 24 \
   --private --name "$(basename {})" {}
 
 DESTINATION_PATH="$3"
