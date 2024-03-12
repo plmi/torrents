@@ -11,7 +11,7 @@ SOURCE_DIRECTORY="$1"
 # remove Sample and Proof directory
 log "Strip Sample and Proof directory"
 find "$SOURCE_DIRECTORY" -type d \( -iname 'Proof' -o -iname 'Sample' \) -exec rm -r {} + && \
-find "$SOURCE_DIRECTORY" -type f \( -iname '*.proof.*' -o -iname '*.sample.*' -o iname '*mediainfo.nfo' -o -iname "*usenet*" \) -exec rm -r {} + && \
+find "$SOURCE_DIRECTORY" -type f \( -iname '*.proof.*' -o -iname '*.sample.*' -o -iname '*mediainfo.nfo' -o -iname "*usenet*" \) -exec rm -r {} + && \
 
 # search for folders that match a dirname and trim {{.*}}
 log "Sanitize directory names"
