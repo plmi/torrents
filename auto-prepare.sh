@@ -40,7 +40,7 @@ find "$SOURCE_DIRECTORY" -type f \( -iname "*.mkv" -o -iname "*.iso" \) | while 
   fi
 done
 
-SRRDB_VALIDATOR="/opt/fix-nfo.py"
+SRRDB_VALIDATOR="/opt/torrents/fix-nfo.py"
 log "Valdidate file integrity"
 find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | while read -r dirname; do
   python3 "$SRRDB_VALIDATOR" --dirname "$dirname" || echo "Could not validate $dirname" && exit 1
