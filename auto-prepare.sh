@@ -43,6 +43,7 @@ done
 SRRDB_VALIDATOR="/opt/torrents/fix-nfo.py"
 log "Valdidate file integrity"
 find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | while read -r dirname; do
+  echo "$dirname"
   python3 "$SRRDB_VALIDATOR" --dirname "$dirname" || echo "Could not validate $dirname" && exit 1
 done
 
