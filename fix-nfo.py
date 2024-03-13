@@ -27,6 +27,9 @@ class NfoDetails:
       def nfo_url(self) -> str:
         return self.__nfo_url
 
+      def __str__(self) -> str:
+        return f'{self.dirname} {self.nfo_name} {self.nfo_url}'
+
 
 def get_nfo_name(files: list[any]) -> str | None:
     pattern: str = r".*\.nfo$"
@@ -39,7 +42,7 @@ def get_nfo_name(files: list[any]) -> str | None:
 def find_nfo_file(directory: str) -> str | None:
     for filename in os.listdir(directory):
         if re.match(r'.*\.nfo$', filename):
-            return filename
+            return os.path.join(directory, filename)
     return None
 
 
@@ -81,7 +84,7 @@ def main():
     parser.add_argument('-d', '--dirname', type=str, help='dirname')
     args = parser.parse_args()
 
-    if not os.path.isfile(args.dirname):
+    if not os.path.isdir(args.dirname):
         logging.error(f'File not found: {args.dirname}')
         sys.exit(1)
 
@@ -89,6 +92,8 @@ def main():
     print(f'original: {original_nfo}')
     nfo_details: NfoDetails = get_nfo_details(args.dirname)
     print(nfo_details)
+
+    sys.exit(0)
 
     if is_nfo_mismatch(original_nfo, nfo_details):
         logging.info(f'Replace nfo: {args.dirname}')
