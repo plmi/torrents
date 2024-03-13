@@ -78,19 +78,20 @@ def is_nfo_mismatch(original_nfo_path: str, nfo_details: NfoDetails) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description='replace nfo file')
-    parser.add_argument('-d', '--dirname', type=str, help='dirname')
+    parser.add_argument('-p', '--path', type=str, help='path to dirname')
     args = parser.parse_args()
 
-    if not os.path.isdir(args.dirname):
-        logging.error(f'File not found: {args.dirname}')
+    if not os.path.isdir(args.path):
+        logging.error(f'File not found: {args.path}')
         sys.exit(1)
 
-    original_nfo_path: str | None = find_nfo_file(args.dirname)
-    nfo_details: NfoDetails = get_nfo_details(args.dirname)
+    original_nfo_path: str | None = find_nfo_file(args.path)
+    dirname: str = os.path.basename(args.path)
+    nfo_details: NfoDetails = get_nfo_details(dirname)
 
     if is_nfo_mismatch(original_nfo_path, nfo_details):
-        logging.info(f'Replace nfo: {args.dirname}')
-        replace_nfo(original_nfo_path, nfo_details, args.dirname)
+        logging.info(f'Replace nfo in: {args.path}')
+        replace_nfo(original_nfo_path, nfo_details, args.path)
 
 
 if __name__ == '__main__':
