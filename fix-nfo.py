@@ -56,9 +56,10 @@ def get_nfo_details(dirname: str) -> NfoDetails:
     return NfoDetails(json_content.get('release'), json_content.get('nfo')[0], json_content.get('nfolink')[0])
 
 
-def replace_nfo(original_nfo_path: str, nfo_detail: NfoDetails, destination: str) -> None:
+def replace_nfo(original_nfo_path: str, nfo_details: NfoDetails, destination: str) -> None:
+    new_nfo_file: str = os.path.join(destination, nfo_details.nfo_name)
+    download_nfo(nfo_details.nfo_url, new_nfo_file)
     os.remove(original_nfo_path)
-    download_nfo(nfo_detail.nfo_url, destination)
 
 
 def download_nfo(nfo_url: str, destination: str) -> None:
@@ -70,13 +71,9 @@ def download_nfo(nfo_url: str, destination: str) -> None:
         f.write(response.content)
 
 
-def is_nfo_mismatch(dirname: str, nfo_details: NfoDetails) -> bool:
-    nfo_filename: str | None = find_nfo_file(dirname)
-    print(f'found: {nfo_filename}')
-    if not nfo_filename:
-        logging.error(f'Could not find nfo file in {dirname}')
-        sys.exit(1)
-    return nfo_filename == nfo_details.nfo_name
+def is_nfo_mismatch(original_nfo_path: str, nfo_details: NfoDetails) -> bool:
+    original_nfo_filename: str = os.path.basename(original_nfo_path)
+    return original_nfo_filename != nfo_details.nfo_name
 
 
 def main():
@@ -88,17 +85,15 @@ def main():
         logging.error(f'File not found: {args.dirname}')
         sys.exit(1)
 
-    original_nfo: str | None = find_nfo_file(args.dirname)
-    print(f'original: {original_nfo}')
+    original_nfo_path: str | None = find_nfo_file(args.dirname)
     nfo_details: NfoDetails = get_nfo_details(args.dirname)
-    print(nfo_details)
 
-    sys.exit(0)
-
-    if is_nfo_mismatch(original_nfo, nfo_details):
+    if is_nfo_mismatch(original_nfo_path, nfo_details):
         logging.info(f'Replace nfo: {args.dirname}')
-        replace_nfo(nfo_details.nfo_url, args.dirname)
+        replace_nfo(original_nfo_path, nfo_details, args.dirname)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     main()
+    sys.exit(0)
