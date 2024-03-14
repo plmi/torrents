@@ -28,14 +28,14 @@ DESTINATION_PATH="$3"
 find "$SOURCE_DIRECTORY" -type f \( -iname "*.mkv" -o -iname "*.iso" \) | while read -r file; do
   OUTPUT_JSON="$(basename "$(dirname "$(readlink -f "${file}")")").json"
   if [[ $file == *mkv ]]; then
-    mediainfo --Output=JSON "$file" > "${DESTINATION_PATH}/$OUTPUT_JSON"
+    mediainfo --Output=JSON "$file" > "${SOURCE_DIRECTORY}/$OUTPUT_JSON"
   elif [[ $file == *iso ]]; then
     # images need to be mounted first
     sudo umount "$MOUNTPOINT"
     sudo mount "$file" "$MOUNTPOINT" -o loop,ro && \
     # create mediainfo from largest file in /BDMV/STREAM
     largest_file=$(find "${MOUNTPOINT}/BDMV/STREAM/" -type f -exec du -a {} + | sort -nr | head -n 1 | cut -f2) && \
-    mediainfo --Output=JSON "$largest_file" > "${DESTINATION_PATH}/$OUTPUT_JSON" && \
+    mediainfo --Output=JSON "$largest_file" > "${SOURCE_DIRECTORY}/$OUTPUT_JSON" && \
     sudo umount "$MOUNTPOINT"
   fi
 done
@@ -47,20 +47,25 @@ USERNAME="$5"
 PASSWORD="$6"
 
 find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | while read -r dirname; do
-  log "Valdidate file integrity: ${dirname}"
-  python3 "$SRRDB_VALIDATOR" --path "$dirname" || echo "Could not validate $dirname" && exit 1
+  #log "Valdidate file integrity: ${dirname}"
+  #python3 "$SRRDB_VALIDATOR" --path "$dirname" || echo "Could not validate $dirname" && exit 1
 
   log "Create torrent: ${dirname}"
-  TORRENT_NAME="${DESTINATION_PATH}/$(basename "$dirname")"
-  maketorrent --announce "${ANNOUNCE_URL}" --piece-length 24 --private --name "$TORRENT_NAME" "$dirname"
+  maketorrent --announce "${ANNOUNCE_URL}" --piece-length 24 --private --name "$dirname" "$dirname"
 
 	NFO=$(find "$dirname" -type f -name "*.nfo")
 	echo "nfo is: $NFO"
+	echo "dirname is: $dirname"
+	echo "torrent name is: ${dirname}.torrent"
+	echo "username is: $USERNAME"
+	echo "password is: $PASSWORD"
+	echo "$(basename "$dirname")"
 
   log "Create upload: ${dirname}"
-  python3 "$POSTER" --torrent "${dirname}.torrent" --nfo "$NFO" --mediainfo "${dirname}.json" --dirname "${TORRENT_NAME} --username "${USERNAME}" --password "${PASSWORD}"
+  python3 "$POSTER" --torrent "${dirname}.torrent" --nfo "$NFO" --mediainfo "${dirname}.json" --dirname "$(basename "$dirname")" --username "${USERNAME}" --password "${PASSWORD}"
+  log "Created upload: ${dirname}"
 done
 
 # move folders to destination
 log "Move files to destination"
-find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' -exec mv -t "${DESTINATION_PATH}" {} +
+find "$SOURCE_DIRECTORY" -maxdepth 1 -regex '.*-.+' -exec mv -t "${DESTINATION_PATH}" {} +
