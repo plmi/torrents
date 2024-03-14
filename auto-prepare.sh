@@ -48,7 +48,7 @@ PASSWORD="$6"
 
 find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | while read -r dirname; do
   #log "Valdidate file integrity: ${dirname}"
-  #python3 "$SRRDB_VALIDATOR" --path "$dirname" || echo "Could not validate $dirname" && exit 1
+  python3 "$SRRDB_VALIDATOR" --path "$dirname"
 
   log "Create torrent: ${dirname}"
   maketorrent --announce "${ANNOUNCE_URL}" --piece-length 24 --private --name "$dirname" "$dirname"
