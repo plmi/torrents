@@ -72,7 +72,7 @@ def get_release_type(group: str) -> ReleaseType:
 
 
 def get_mediainfo(filename: str) -> str:
-    return json.loads(read_file(filename))
+    return read_file(filename)
 
 
 def read_file(filename: str) -> str:
@@ -103,7 +103,13 @@ def main() -> None:
     parser.add_argument('-k', '--key', type=str, help='api key')
     parser.add_argument('-u', '--username', type=str, help='username')
     parser.add_argument('-p', '--password', type=str, help='password')
+    parser.add_argument('--proxy', action=argparse.BooleanOptionalAction, default=False, help='use proxy http://127.0.0.1:8080 to debug')
     args = parser.parse_args()
+
+    proxies: dict = {}
+    if args.proxy:
+        proxies = { 'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080' }
+
 
     with requests.Session() as session:
         csrf_token: str | None = get_csrf_token(session)
@@ -120,19 +126,19 @@ def main() -> None:
             'username': args.username,
             'password': args.password,
         }
-        response: requests.Response = requests.post('https://torrent-syndikat.org/eing2.php', data=payload, headers=headers)
+        response: requests.Response = session.post('https://torrent-syndikat.org/eing2.php', data=payload, headers=headers, proxies=proxies, verify=False, allow_redirects=True)
         if response.status_code != 200:
             logging.error(f'Login failed with status code: {response.status_code}')
             sys.exit(1)
 
         files: dict = {
-            'torrent': open(args.torrent, 'rb'),
-            'nfo': open(args.nfo, 'r'),
+            'torrent': (args.torrent, open(args.torrent, 'rb'), 'application/x-bittorrent'),
+            'nfo': (args.nfo, open(args.nfo, 'r'), 'text/x-nfo'),
         }
         group: str = get_group(args.dirname)
         payload: dict = {
             'MAX_FILE_SIZE': '3145728',
-            'category': get_category(args.dirname),
+            'category': get_category(args.dirname).value,
             'release_type': get_release_type(group),
             'name': args.dirname,
             'mediainfo': get_mediainfo(args.mediainfo),
@@ -141,46 +147,20 @@ def main() -> None:
             'description': '',
             'anonymous': 'yes',
             'genres': 'yes',
+            'pid': '',
         }
         headers: dict = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.57 Safari/537.36'
         }
 
         url: str = 'https://torrent-syndikat.org/tsystem/uppit.php'
-        response: requests.Response = requests.post(url, files=files, data=payload, timeout=5, headers=headers)
+        response: requests.Response = session.post(url, files=files, data=payload, timeout=5, headers=headers, proxies=proxies, verify=False, allow_redirects=True)
         if response.status_code == 200:
             logging.info(f'Upload of {args.dirname} successful')
             print(response.content)
         else:
             logging.error(f'Request failed with status code {response.status_code}')
             sys.exit(1)
-
-    # files: dict = {
-    #     'torrent': open(args.torrent, 'rb'),
-    #     'nfo': open(args.nfo, 'rb'),
-    # }
-    # group: str = get_group(args.dirname)
-    # payload: dict = {
-    #     'name': args.dirname,
-    #     'category': get_category(args.dirname),
-    #     'mediainfo': get_mediainfo(args.mediainfo),
-    #     'imdbid': get_imdbid(args.nfo),
-    #     'anonymous': 'true',
-    #     'nfo': open(args.nfo, 'rb'),
-    #     'release_type': get_release_type(group),
-    # }
-    # headers: dict = {
-    #     'User-Agent': 'tsyn/v0.6.0'
-    # }
-
-    # url: str = f'https://torrent-syndikat.org/{args.key}/v1/upload.php'
-    # response: requests.Response = requests.post(url, files=files, data=payload, timeout=5, headers=headers)
-    # if response.status_code == 200:
-    #     logging.info(f'Upload of {args.dirname} successful')
-    #     print(response.content)
-    # else:
-    #     logging.error(f'Request failed with status code {response.status_code}')
-    #     sys.exit(1)
 
 
 if __name__ == '__main__':
