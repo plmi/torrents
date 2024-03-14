@@ -12,7 +12,7 @@ import requests
 
 
 def get_imdbid(nfo_path: str) -> str:
-    with open(nfo_path, 'r') as f:
+    with open(nfo_path, 'r', encoding='utf-8', errors='ignore') as f:
         content: str = f.read()
         match = re.search(r'tt\d{7,8}', content)
         if match:
@@ -59,9 +59,9 @@ def get_group(dirname: str) -> str:
 
 
 def get_release_type(group: str) -> ReleaseType:
-    if is_string_in_file('p2p.txt', group):
+    if is_string_in_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'p2p.txt'), group):
         return ReleaseType.P2P
-    elif is_string_in_file('scene.txt', group):
+    if is_string_in_file(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'scene.txt'), group):
         return ReleaseType.SCENE
     type: str = input(f'Select release type for {group} [p2p|scene]: ')
     if type not in ['p2p', 'scene']:
@@ -96,20 +96,18 @@ def get_csrf_token(session: requests.Session) -> str | None:
 
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description='upload torrent')
-    parser.add_argument('-t', '--torrent', type=str, help='path to torrent file')
-    parser.add_argument('-n', '--nfo', type=str, help='path to nfo file')
-    parser.add_argument('-m', '--mediainfo', type=str, help='path to media info json')
-    parser.add_argument('-d', '--dirname', type=str, help='dirname')
-    parser.add_argument('-k', '--key', type=str, help='api key')
-    parser.add_argument('-u', '--username', type=str, help='username')
-    parser.add_argument('-p', '--password', type=str, help='password')
+    parser.add_argument('-t', '--torrent', required=True, type=str, help='path to torrent file')
+    parser.add_argument('-n', '--nfo', required=True, type=str, help='path to nfo file')
+    parser.add_argument('-m', '--mediainfo', required=True, type=str, help='path to media info json')
+    parser.add_argument('-d', '--dirname', required=True, type=str, help='dirname')
+    parser.add_argument('-u', '--username', required=True, type=str, help='username')
+    parser.add_argument('-p', '--password', required=True, type=str, help='password')
     parser.add_argument('--proxy', action=argparse.BooleanOptionalAction, default=False, help='use proxy http://127.0.0.1:8080 to debug')
     args = parser.parse_args()
 
     proxies: dict = {}
     if args.proxy:
         proxies = { 'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080' }
-
 
     with requests.Session() as session:
         csrf_token: str | None = get_csrf_token(session)
@@ -133,7 +131,7 @@ def main() -> None:
 
         files: dict = {
             'torrent': (args.torrent, open(args.torrent, 'rb'), 'application/x-bittorrent'),
-            'nfo': (args.nfo, open(args.nfo, 'r'), 'text/x-nfo'),
+            'nfo': (args.nfo, open(args.nfo, 'r', encoding='utf-8', errors='ignore'), 'text/x-nfo'),
         }
         group: str = get_group(args.dirname)
         payload: dict = {
