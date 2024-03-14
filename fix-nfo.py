@@ -56,10 +56,11 @@ def get_nfo_details(dirname: str) -> NfoDetails:
     return NfoDetails(json_content.get('release'), json_content.get('nfo')[0], json_content.get('nfolink')[0])
 
 
-def replace_nfo(original_nfo_path: str, nfo_details: NfoDetails, destination: str) -> None:
+def replace_nfo(original_nfo_path: str | None, nfo_details: NfoDetails, destination: str) -> None:
     new_nfo_file: str = os.path.join(destination, nfo_details.nfo_name)
     download_nfo(nfo_details.nfo_url, new_nfo_file)
-    os.remove(original_nfo_path)
+    if original_nfo_path:
+        os.remove(original_nfo_path)
 
 
 def download_nfo(nfo_url: str, destination: str) -> None:
@@ -88,11 +89,9 @@ def main():
     original_nfo_path: str | None = find_nfo_file(args.path)
     logging.debug(f'original_nfo_path: {original_nfo_path}')
     dirname: str = os.path.basename(args.path)
-    logging.debug(f'dirname: {dirname}')
     nfo_details: NfoDetails = get_nfo_details(dirname)
-    logging.debug(f'nfo details: {nfo_details}')
 
-    if is_nfo_mismatch(original_nfo_path, nfo_details):
+    if not original_nfo_path or is_nfo_mismatch(original_nfo_path, nfo_details):
         logging.info(f'Replace nfo in: {args.path}')
         replace_nfo(original_nfo_path, nfo_details, args.path)
 
