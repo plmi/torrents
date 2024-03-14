@@ -155,7 +155,6 @@ def main() -> None:
         response: requests.Response = session.post(url, files=files, data=payload, timeout=5, headers=headers, proxies=proxies, verify=False, allow_redirects=True)
         if response.status_code == 200:
             logging.info(f'Upload of {args.dirname} successful')
-            print(response.content)
         else:
             logging.error(f'Request failed with status code {response.status_code}')
             sys.exit(1)
