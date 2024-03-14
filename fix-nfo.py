@@ -86,8 +86,11 @@ def main():
         sys.exit(1)
 
     original_nfo_path: str | None = find_nfo_file(args.path)
+    logging.debug(f'original_nfo_path: {original_nfo_path}')
     dirname: str = os.path.basename(args.path)
+    logging.debug(f'dirname: {dirname}')
     nfo_details: NfoDetails = get_nfo_details(dirname)
+    logging.debug(f'nfo details: {nfo_details}')
 
     if is_nfo_mismatch(original_nfo_path, nfo_details):
         logging.info(f'Replace nfo in: {args.path}')
@@ -95,6 +98,6 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     main()
     sys.exit(0)
