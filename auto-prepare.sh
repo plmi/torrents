@@ -41,18 +41,24 @@ find "$SOURCE_DIRECTORY" -type f \( -iname "*.mkv" -o -iname "*.iso" \) | while 
 done
 
 SRRDB_VALIDATOR="/opt/torrents/fix-nfo.py"
-log "Valdidate file integrity"
-find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | while read -r dirname; do
-  echo "$dirname"
-  python3 "$SRRDB_VALIDATOR" --path "$dirname" || echo "Could not validate $dirname" && exit 1
-done
-
-# create torrent files
-log "Create torrent files"
 ANNOUNCE_URL="$4"
+POSTER="/opt/torrents/ts-poster.py"
+USERNAME="$5"
+PASSWORD="$6"
+
 find "$SOURCE_DIRECTORY" -maxdepth 1 -type d -regex '.*-.+' | while read -r dirname; do
+  log "Valdidate file integrity: ${dirname}"
+  python3 "$SRRDB_VALIDATOR" --path "$dirname" || echo "Could not validate $dirname" && exit 1
+
+  log "Create torrent: ${dirname}"
   TORRENT_NAME="${DESTINATION_PATH}/$(basename "$dirname")"
   maketorrent --announce "${ANNOUNCE_URL}" --piece-length 24 --private --name "$TORRENT_NAME" "$dirname"
+
+	NFO=$(find "$dirname" -type f -name "*.nfo")
+	echo "nfo is: $NFO"
+
+  log "Create upload: ${dirname}"
+  python3 "$POSTER" --torrent "${dirname}.torrent" --nfo "$NFO" --mediainfo "${dirname}.json" --dirname "${TORRENT_NAME} --username "${USERNAME}" --password "${PASSWORD}"
 done
 
 # move folders to destination
