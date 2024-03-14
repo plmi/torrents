@@ -131,7 +131,7 @@ def main() -> None:
 
         files: dict = {
             'torrent': (args.torrent, open(args.torrent, 'rb'), 'application/x-bittorrent'),
-            'nfo': (args.nfo, open(args.nfo, 'r', encoding='utf-8', errors='ignore'), 'text/x-nfo'),
+            'nfo': (args.nfo, open(args.nfo, 'rb'), 'text/x-nfo'),
         }
         group: str = get_group(args.dirname)
         payload: dict = {
