@@ -31,7 +31,7 @@ class ReleaseType(StrEnum):
 
 
 def get_category(dirname: str) -> Category:
-    if '2160p' or  'COMPLETE.UHD.BLURAY' in dirname:
+    if '2160p' or 'COMPLETE.UHD.BLURAY' in dirname:
         return Category.MOVIE_2160
     if '1080p' or 'COMPLETE.BLURAY' in dirname:
         return Category.MOVIE_1080
@@ -53,6 +53,7 @@ def append_new_line(file_path: str, line) -> None:
     with open(file_path, 'a+') as file:
         file.write(line + '\n')
 
+
 def get_group(dirname: str) -> str:
     return dirname.split('-')[-1]
 
@@ -67,7 +68,7 @@ def get_release_type(group: str) -> ReleaseType:
         raise ValueError(f'Unknown user input: {type}')
     file_path: str = 'p2p.txt' if type == 'p2p' else 'scene.txt'
     append_new_line(file_path, group)
-    get_release_type(group)
+    return get_release_type(group)
 
 
 def get_mediainfo(filename: str) -> str:
@@ -81,6 +82,18 @@ def read_file(filename: str) -> str:
         return f.read()
 
 
+def get_csrf_token(session: requests.Session) -> str | None:
+    response: requests.Response = session.get('https://torrent-syndikat.org/eing.php')
+    if response.status_code != 200:
+        logging.error(f'Request failed: {response.status_code}')
+        sys.exit(1)
+
+    match = re.search(f"value='([a-z0-9]+)'", response.text)
+    if match:
+        return match.group(1)
+    return None
+
+
 def main() -> None:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description='upload torrent')
     parser.add_argument('-t', '--torrent', type=str, help='path to torrent file')
@@ -88,34 +101,86 @@ def main() -> None:
     parser.add_argument('-m', '--mediainfo', type=str, help='path to media info json')
     parser.add_argument('-d', '--dirname', type=str, help='dirname')
     parser.add_argument('-k', '--key', type=str, help='api key')
+    parser.add_argument('-u', '--username', type=str, help='username')
+    parser.add_argument('-p', '--password', type=str, help='password')
     args = parser.parse_args()
 
-    files: dict = {
-        'torrent': open(args.torrent, 'rb'),
-        'nfo': open(args.nfo, 'rb'),
-    }
-    group: str = get_group(args.dirname)
-    payload: dict = {
-        'name': args.dirname,
-        'category': get_category(args.dirname),
-        'mediainfo': get_mediainfo(args.mediainfo),
-        'imdbid': get_imdbid(args.nfo),
-        'anonymous': 'true',
-        'nfo': open(args.nfo, 'rb'),
-        'release_type': get_release_type(group),
-    }
-    headers: dict = {
-        'User-Agent': 'tsyn/v0.6.0'
-    }
+    with requests.Session() as session:
+        csrf_token: str | None = get_csrf_token(session)
+        print(csrf_token)
+        if not csrf_token:
+            logging.error('Could not extract csrf token')
+            sys.exit(1)
 
-    url: str = f'https://torrent-syndikat.org/{args.key}/v1/upload.php'
-    response: requests.Response = requests.post(url, files=files, data=payload, timeout=5, headers=headers)
-    if response.status_code == 200:
-        logging.info(f'Upload of {args.dirname} successful')
-        print(response.content)
-    else:
-        logging.error(f'Request failed with status code {response.status_code}')
-        sys.exit(1)
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        payload = {
+            'tst': csrf_token,
+            'username': args.username,
+            'password': args.password,
+        }
+        response: requests.Response = requests.post('https://torrent-syndikat.org/eing2.php', data=payload, headers=headers)
+        if response.status_code != 200:
+            logging.error(f'Login failed with status code: {response.status_code}')
+            sys.exit(1)
+
+        files: dict = {
+            'torrent': open(args.torrent, 'rb'),
+            'nfo': open(args.nfo, 'r'),
+        }
+        group: str = get_group(args.dirname)
+        payload: dict = {
+            'MAX_FILE_SIZE': '3145728',
+            'category': get_category(args.dirname),
+            'release_type': get_release_type(group),
+            'name': args.dirname,
+            'mediainfo': get_mediainfo(args.mediainfo),
+            'imdbid': get_imdbid(args.nfo),
+            'posterlink': '',
+            'description': '',
+            'anonymous': 'yes',
+            'genres': 'yes',
+        }
+        headers: dict = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.57 Safari/537.36'
+        }
+
+        url: str = 'https://torrent-syndikat.org/tsystem/uppit.php'
+        response: requests.Response = requests.post(url, files=files, data=payload, timeout=5, headers=headers)
+        if response.status_code == 200:
+            logging.info(f'Upload of {args.dirname} successful')
+            print(response.content)
+        else:
+            logging.error(f'Request failed with status code {response.status_code}')
+            sys.exit(1)
+
+    # files: dict = {
+    #     'torrent': open(args.torrent, 'rb'),
+    #     'nfo': open(args.nfo, 'rb'),
+    # }
+    # group: str = get_group(args.dirname)
+    # payload: dict = {
+    #     'name': args.dirname,
+    #     'category': get_category(args.dirname),
+    #     'mediainfo': get_mediainfo(args.mediainfo),
+    #     'imdbid': get_imdbid(args.nfo),
+    #     'anonymous': 'true',
+    #     'nfo': open(args.nfo, 'rb'),
+    #     'release_type': get_release_type(group),
+    # }
+    # headers: dict = {
+    #     'User-Agent': 'tsyn/v0.6.0'
+    # }
+
+    # url: str = f'https://torrent-syndikat.org/{args.key}/v1/upload.php'
+    # response: requests.Response = requests.post(url, files=files, data=payload, timeout=5, headers=headers)
+    # if response.status_code == 200:
+    #     logging.info(f'Upload of {args.dirname} successful')
+    #     print(response.content)
+    # else:
+    #     logging.error(f'Request failed with status code {response.status_code}')
+    #     sys.exit(1)
 
 
 if __name__ == '__main__':
