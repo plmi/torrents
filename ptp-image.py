@@ -106,18 +106,19 @@ class PtpImageService:
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('--directory', type=str, help='image directory')
+    argparser.add_argument('--directory', required=True, type=str, help='image directory')
+    argparser.add_argument('--configuration', required=True, type=str, help='path to json config')
     argparser.add_argument('--debug', action='store_true', default=False, help='use burp proxy for debugging')
     args = argparser.parse_args()
 
-    configuration: Configuration = ConfigurationService('./configuration.json').get_configuration()
+    configuration: Configuration = ConfigurationService(args.configuration).get_configuration()
     ptp_image: PtpImageService = PtpImageService(configuration, args.debug)
 
     images: list[Path] = list(Path(args.directory).glob('*.png'))
     links: list[str] = ptp_image.upload(images)
 
     for link in links:
-        logging.info(link)
+        print(f'[img]{link}[/img]')
 
 
 if __name__ == '__main__':
