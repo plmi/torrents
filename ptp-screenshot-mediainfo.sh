@@ -4,7 +4,7 @@ INPUT_FILE="$1"
 OUTPUT_DIRECTORY="$(realpath $2)"
 
 # create media info
-mediainfo -f "$INPUT_FILE" > "${OUTPUT_DIRECTORY}/$(basename $INPUT_FILE).mediainfo" && \
+mediainfo "$INPUT_FILE" > "${OUTPUT_DIRECTORY}/$(basename $INPUT_FILE).mediainfo" && \
   # take 3 screenshots
   ffmpeg -ss 00:05:00 -y -i "$INPUT_FILE" -c:v png -frames:v 1 -loglevel error "${OUTPUT_DIRECTORY}/screenshot-1.png" && \
   ffmpeg -ss 00:10:00 -y -i "$INPUT_FILE" -c:v png -frames:v 1 -loglevel error "${OUTPUT_DIRECTORY}/screenshot-2.png" && \
