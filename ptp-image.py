@@ -106,18 +106,26 @@ class PtpImageService:
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('--directory', required=True, type=str, help='image directory')
-    argparser.add_argument('--configuration', required=True, type=str, help='path to json config')
+    # argparser.add_argument('--directory', required=True, type=str, help='image directory')
+    argparser.add_argument('--configuration', required=True, type=str, help='configuration')
+    argparser.add_argument('--images', required=True, nargs='+', help='list of images')
     argparser.add_argument('--debug', action='store_true', default=False, help='use burp proxy for debugging')
+    # when uploading > 1 image the server often returns a timeout...
+    argparser.add_argument('--single', action='store_true', default=False, help='upload images one by one')
     args = argparser.parse_args()
 
     configuration: Configuration = ConfigurationService(args.configuration).get_configuration()
     ptp_image: PtpImageService = PtpImageService(configuration, args.debug)
 
-    images: list[Path] = list(Path(args.directory).glob('*.png'))
-    links: list[str] = ptp_image.upload(images)
+    images: list[Path] = [Path(image) for image in args.images]
+    image_links: list[str] = []
+    if args.single:
+        for image in images:
+            image_links.extend(ptp_image.upload([image]))
+    else:
+        image_links = ptp_image.upload(images)
 
-    for link in links:
+    for link in image_links:
         print(f'[img]{link}[/img]')
 
 
