@@ -13,3 +13,7 @@ mediainfo "$INPUT_FILE" > "${OUTPUT_DIRECTORY}.mediainfo" && \
   ffmpeg -ss 00:05:00 -y -i "$INPUT_FILE" -c:v png -frames:v 1 -loglevel error "${OUTPUT_DIRECTORY}-screenshot-1.png" && \
   ffmpeg -ss 00:10:00 -y -i "$INPUT_FILE" -c:v png -frames:v 1 -loglevel error "${OUTPUT_DIRECTORY}-screenshot-2.png" && \
   ffmpeg -ss 00:15:00 -y -i "$INPUT_FILE" -c:v png -frames:v 1 -loglevel error "${OUTPUT_DIRECTORY}-screenshot-3.png"
+
+echo "${OUTPUT_DIRECTORY}-screenshot-1.png"
+echo "${OUTPUT_DIRECTORY}-screenshot-2.png"
+echo "${OUTPUT_DIRECTORY}-screenshot-3.png"
